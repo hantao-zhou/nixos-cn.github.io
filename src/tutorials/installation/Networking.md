@@ -99,3 +99,81 @@ sudo systemctl restart nix-daemon
 
 <!-- prettier-ignore -->
 :::
+
+## 4. 使用国内 Git 镜像替代 GitHub
+
+由于 NixOS Flakes 依赖 GitHub 仓库进行代码托管，而国内访问 GitHub 可能较慢，建议使用国内的 Git 镜像（如 Gitee、清华大学开源镜像站等）来加速 Flake 依赖的获取。
+
+### 4.1 替换 GitHub 为 Gitee 或其他国内镜像
+
+在 Flake 配置文件 `flake.nix` 中，默认的 `nixpkgs` 可能使用 GitHub 作为数据源，例如：
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+  };
+}
+```
+
+可以将其替换为国内的 Git 镜像，例如 Gitee：
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "git+https://gitee.com/mirrors/NixOS-nixpkgs.git?ref=nixos-23.11";
+  };
+}
+```
+
+### 4.2 直接修改 `nix.registry` 以自动使用国内 Git 镜像
+
+可以通过 `nix registry` 机制，让所有 `github:NixOS/nixpkgs` 形式的引用自动跳转到国内镜像：
+
+```bash
+nix registry add nixpkgs git+https://gitee.com/mirrors/NixOS-nixpkgs.git
+```
+
+这样，所有 `github:NixOS/nixpkgs` 形式的 Flake 依赖都会被自动重定向到 Gitee，避免手动修改 `flake.nix`。
+
+### 4.3 其他国内 Git 镜像来源
+
+除了 Gitee 之外，还可以使用其他国内提供的 Git 镜像，例如：
+
+- **清华大学开源镜像站**  
+  - 地址：https://mirrors.tuna.tsinghua.edu.cn/help/git/  
+  - 示例：
+    ```nix
+    nixpkgs.url = "git+https://mirrors.tuna.tsinghua.edu.cn/git/nixpkgs.git?ref=nixos-23.11";
+    ```
+
+- **中国科学技术大学开源镜像站**  
+  - 地址：https://mirrors.ustc.edu.cn/  
+  - 示例：
+    ```nix
+    nixpkgs.url = "git+https://mirrors.ustc.edu.cn/git/nixpkgs.git?ref=nixos-23.11";
+    ```
+
+### 4.4 手动克隆并使用本地 Git 仓库
+
+如果仍然无法流畅访问 GitHub 或国内镜像，可考虑手动克隆 `nixpkgs` 到本地：
+
+```bash
+git clone --depth 1 -b nixos-23.11 https://gitee.com/mirrors/NixOS-nixpkgs.git ~/nixpkgs
+```
+
+然后在 `flake.nix` 中使用本地路径：
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "path:/home/your-username/nixpkgs";
+  };
+}
+```
+
+这种方法适用于 Git 访问受限的情况下，手动同步 `nixpkgs` 仓库，确保 Flake 解析不会因网络问题受阻。
+
+---
+
+通过上述方法，可以有效缓解国内用户在使用 NixOS 时因 GitHub 访问受限导致的 Flakes 下载问题，提高系统更新和软件包管理的效率。
